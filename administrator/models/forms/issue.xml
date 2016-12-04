@@ -18,6 +18,11 @@
               <option value="0">JNO</option>
               <option value="1">JYES</option>
             </field>
+        <field name="is_moderation_modified"
+               type="hidden"
+               default="false"
+               label="Moderation modified?" />
+
 
         <field name="regnum" type="text"
                 label="COM_IMC_FORM_LBL_ISSUE_REGNUM"
@@ -44,7 +49,8 @@
             description="" 
             required="true"
             descriptionfield="step_modified_description"
-            flagfield="is_step_modified" 
+            flagfield="is_step_modified"
+            side="backend"
             /> 
         <field name="step_modified_description"
             type="text"
@@ -64,9 +70,9 @@
             required="true" 
             extension="com_imc" 
             descriptionfield="category_modified_description"
-            flagfield="is_category_modified" 
-            
-            /> 
+            flagfield="is_category_modified"
+            side="backend"
+            />
 
         <field name="category_modified_description"
             type="text"
@@ -100,7 +106,8 @@
             longitudefield="longitude" 
             filter="safehtml" 
             width="100%"
-            height="300px" /> 
+            height="300px"
+            side="backend" />
 
         <field name="subgroup" type="subgrouplist"
             showempty="true"
@@ -183,7 +190,14 @@
 
         <field name="checked_out" type="hidden" filter="unset" />
         
-        <field name="checked_out_time" type="hidden" filter="unset" /> 
+        <field name="checked_out_time" type="hidden" filter="unset" />
+
+        <field name="is_citizen" type="checkbox"
+               id="is_citizen"
+               label="COM_IMC_FORM_LBL_ISSUE_IS_CITIZEN"
+               default="0"
+               onchange="profile_change();" />
+
 
     </fieldset> 
 

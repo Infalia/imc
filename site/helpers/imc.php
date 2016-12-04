@@ -250,8 +250,9 @@ class ImcFrontendHelper
 		}
 		if(isset($data->comments))
 		{
-			//check if comments are globally disabled
-			if ($params->get('enablecomments') == 0)
+			//check if comments are allowed
+			$showComments = self::showComments(JFactory::getUser($userid), $data);
+			if (!$showComments)
 			{
 				$data->comments = -1;
 			}
@@ -518,7 +519,9 @@ class ImcFrontendHelper
 			->select('a.id, a.title, a.parent_id, a.published AS state, a.params')
 			->from('#__categories AS a')
 			->where('extension = ' . $db->quote('com_imc'))
-			->where('a.modified_time >= "' . $ts . '"');
+			->order('lft asc')
+            ->where('a.modified_time >= "' . $ts . '"');
+
 		$db->setQuery($query);
 		$result = $db->loadAssocList();
 		foreach ($result as &$category) {
@@ -1494,4 +1497,104 @@ class ImcFrontendHelper
 		$userid	= (int)$db->setQuery($query,0,1)->loadResult();
 		return $userid;
 	}
+
+	public static function getRawIssues($ts, $prior_to, $minLat, $maxLat, $minLng, $maxLng)
+	{
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+		$query->select('`id`,`latitude`,`longitude`,`votes`')
+			->from('`#__imc_issues` AS a')
+			->where('state = 1')
+		;
+
+		if(!is_null($minLat) && !is_null($maxLat) && !is_null($minLng) && !is_null($maxLng))
+		{
+			$query->where('a.latitude BETWEEN ' . $minLat . ' AND ' . $maxLat );
+			$query->where('a.longitude BETWEEN ' . $minLng . ' AND ' . $maxLng );
+		}
+
+		if(!is_null($ts))
+		{
+			//$query->where('UNIX_TIMESTAMP(a.updated) >=' . $ts);
+			$query->where('a.updated >= "' . $ts .'"');
+
+		}
+
+		if(!is_null($prior_to))
+		{
+			//$query->where('UNIX_TIMESTAMP(a.updated) <=' . $prior_to);
+			$query->where('a.updated <= "' . $prior_to .'"');
+		}
+
+		$db->setQuery($query);
+		$result = $db->loadAssocList();
+		return $result;
+
+	}
+
+	public static function showComments($user, $issue)
+	{
+		$showComments = true;
+
+		$params = JFactory::getApplication()->getParams('com_imc');
+		$commentsEnabled = $params->get('enablecomments', false);
+		$commentsMode = $params->get('commentsmode');
+		$ownIssue = $user->id == $issue->created_by;
+
+		//if mode is private and user is the owner of the issue then show comments
+		if ($commentsMode == 'private' && $ownIssue)
+		{
+			$showComments = true;
+		}
+		else
+		{
+			$showComments = false;
+		}
+
+		//if user is comments-administrator then show the comments in any case
+		if(ImcHelper::getActions($user)->get('imc.manage.comments'))
+		{
+			$showComments = true;
+		}
+
+		//also if mode is public then show the comments in any case
+		if ($commentsMode == 'public')
+		{
+			$showComments = true;
+		}
+
+		//finally, if comments are disabled then do not show comments in any case
+		if(!$commentsEnabled)
+		{
+			$showComments = false;
+		}
+
+		return $showComments;
+	}
+
+    public static function issuesByCategory($ts = null, $catid = null)
+    {
+        if(is_null($ts))
+        {
+            $ts = 0;
+        }
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query
+            ->select('a.id, a.title, a.stepid, a.description, a.address, a.latitude, a.longitude, a.state, a.created, a.updated')
+            ->from('#__imc_issues AS a')
+            ->where('a.state=1')
+            ->where('a.updated >= "' . $ts . '"');
+
+        if(!is_null($catid))
+        {
+            $query->where('a.catid='.$catid);
+        }
+
+        $db->setQuery($query);
+        $result = $db->loadAssocList();
+
+        return $result;
+    }
+
 }

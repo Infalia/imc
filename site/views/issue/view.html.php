@@ -12,6 +12,7 @@ defined('_JEXEC') or die;
 
 jimport('joomla.application.component.view');
 JHtml::_('jquery.framework');
+require_once JPATH_COMPONENT_ADMINISTRATOR . '/helpers/imc.php';
 /**
  * View to edit
  */
@@ -22,6 +23,7 @@ class ImcViewIssue extends JViewLegacy {
     ///protected $form;
     protected $params;
     protected $showComments;
+	protected $logs;
 
     /**
      * Display the view
@@ -34,7 +36,8 @@ class ImcViewIssue extends JViewLegacy {
         $this->state = $this->get('State');
         $this->item = $this->get('Data');
         $this->params = $app->getParams('com_imc');
-        $this->showComments = $this->params->get('enablecomments');
+
+        $this->showComments = ImcFrontendHelper::showComments($user, $this->item);
 
         if (!empty($this->item)) {
             ///$this->form = $this->get('Form');
@@ -47,13 +50,10 @@ class ImcViewIssue extends JViewLegacy {
 
         }
 
-
         // Check for errors.
         if (count($errors = $this->get('Errors'))) {
             throw new Exception(implode("\n", $errors));
         }
-
-        
 
         if ($this->_layout == 'edit') {
 

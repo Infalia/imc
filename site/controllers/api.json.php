@@ -38,15 +38,17 @@ require_once JPATH_COMPONENT_SITE . '/controllers/comments.json.php';
 class ImcControllerApi extends ImcController
 {
     private $mcrypt;
-
     private $keyModel;
+    private $params;
 
     function __construct()
     {
+        $this->params = JComponentHelper::getParams('com_imc');
     	$this->mcrypt = new MCrypt();
         JModelLegacy::addIncludePath(JPATH_COMPONENT_ADMINISTRATOR . '/models');
         $this->keyModel = JModelLegacy::getInstance( 'Key', 'ImcModel', array('ignore_request' => true) );
     	parent::__construct();
+
     }
 
     public function exception_error_handler($errno, $errstr, $errfile, $errline){
@@ -72,10 +74,12 @@ class ImcControllerApi extends ImcController
         ImcFrontendHelper::setLanguage($app->input->getString('l'), array('com_users', 'com_imc'));
 
         //check for nonce (existing token)
-        if(ImcModelTokens::exists($token)){
-            throw new Exception('Token is already used');
+        if($this->params->get('advancedsecurity'))
+        {
+            if (ImcModelTokens::exists($token)) {
+                throw new Exception('Token is already used');
+            }
         }
-
         //2. get the appropriate key according to given modality
         $result = $this->keyModel->getItem($m_id);
         $key = $result->skey;
@@ -100,9 +104,10 @@ class ImcControllerApi extends ImcController
             throw new Exception('Token is not well formatted');
         }
 
-        //TODO: Set timeout at options
-        if((time() - $objToken->t) > 3 * 60){
-            throw new Exception('Token has expired');
+        if($this->params->get('advancedsecurity')) {
+            if ((time() - $objToken->t) > 3 * 60) {
+                throw new Exception('Token has expired');
+            }
         }
 
         //4. authenticate user
@@ -135,14 +140,16 @@ class ImcControllerApi extends ImcController
 		}
 
         //5. populate token table
-        $record = new stdClass();
-        $record->key_id = $m_id;
-        $record->user_id = $userid;
-        //$record->json_size = $json_size;
-        $record->method = $app->input->getMethod();
-        $record->token = $token;
-        $record->unixtime = $objToken->t;
-        ImcModelTokens::insertToken($record); //this static method throws exception on error
+        if($this->params->get('advancedsecurity')) {
+            $record = new stdClass();
+            $record->key_id = $m_id;
+            $record->user_id = $userid;
+            //$record->json_size = $json_size;
+            $record->method = $app->input->getMethod();
+            $record->token = $token;
+            $record->unixtime = $objToken->t;
+            ImcModelTokens::insertToken($record); //this static method throws exception on error
+        }
 
         return $isNew ? $userInfo : (int)$userid;
     }
@@ -180,7 +187,7 @@ class ImcControllerApi extends ImcController
 		$result = null;
 		$app = JFactory::getApplication();
 		try {
-		    $userid = self::validateRequest();
+		    self::validateRequest();
 
 			if($app->input->getMethod() != 'GET')
 			{
@@ -192,70 +199,35 @@ class ImcControllerApi extends ImcController
 			$maxLat = $app->input->getString('maxLat');
 			$minLng = $app->input->getString('minLng');
 			$maxLng = $app->input->getString('maxLng');
-
-			$ordering = $app->input->getString('ordering', 'id');
-			$direction = $app->input->getString('direction', 'DESC');
-
-			$owned = $app->input->get('owned', false);
-			$lim = $app->input->getInt('lim', 0);
 			$ts = $app->input->getString('ts');
 			$prior_to = $app->input->getString('prior_to');
 
-            //get issues model
-            $issuesModel = JModelLegacy::getInstance( 'Issues', 'ImcModel', array('ignore_request' => true) );
-            //set states
-            $issuesModel->setState('filter.owned', ($owned === 'true' ? 'yes' : 'no'));
-            $issuesModel->setState('filter.imcapi.userid', $userid);
-            if($userid == 0)
-            {
-                $issuesModel->setState('filter.imcapi.guest', true);
-            }
-            $issuesModel->setState('filter.imcapi.ordering', $ordering); //default is 'id' <-- same as created
-            $issuesModel->setState('filter.imcapi.direction', $direction); //default is 'DESC'
-            $issuesModel->setState('filter.imcapi.limit', $lim);
-
-			if(!is_null($minLat) && !is_null($maxLat) && !is_null($minLng) && !is_null($maxLng))
-			{
-				$issuesModel->setState('filter.imcapi.minLat', $minLat);
-				$issuesModel->setState('filter.imcapi.maxLat', $maxLat);
-				$issuesModel->setState('filter.imcapi.minLng', $minLng);
-				$issuesModel->setState('filter.imcapi.maxLng', $maxLng);
-			}
 
 			if(!is_null($ts))
 			{
-			    if(!ImcFrontendHelper::isValidTimeStamp($ts))
-                {
-                    throw new Exception('Invalid timestamp');
-                }
+				if(!ImcFrontendHelper::isValidTimeStamp($ts))
+				{
+					throw new Exception('Invalid timestamp');
+				}
 
 				//get date from ts
-	            $ts = gmdate('Y-m-d H:i:s', $ts);
-				$issuesModel->setState('filter.imcapi.created.ts', $ts);
+				$ts = gmdate('Y-m-d H:i:s', $ts);
 			}
 			if(!is_null($prior_to))
 			{
-			    if(!ImcFrontendHelper::isValidTimeStamp($prior_to))
-                {
-                    throw new Exception('Invalid prior_to timestamp');
-                }
+				if(!ImcFrontendHelper::isValidTimeStamp($prior_to))
+				{
+					throw new Exception('Invalid prior_to timestamp');
+				}
 				//get date from ts
-	            $prior_to = gmdate('Y-m-d H:i:s', $prior_to);
-				$issuesModel->setState('filter.imcapi.created.priorto', $prior_to);
+				$prior_to = gmdate('Y-m-d H:i:s', $prior_to);
 			}
 
-			$issuesModel->setState('filter.imcapi.raw', true); //Do not unset anything in getItems()
-			$issuesModel->setState('filter.state', 1); //we need only published issues
-
-            //handle unexpected warnings from model
-            set_error_handler(array($this, 'exception_error_handler'));
-			//get items and sanitize them
-			$data = $issuesModel->getItems();
-			$result = ImcFrontendHelper::sanitizeIssues($data, $userid);
-			$app->enqueueMessage('size: '.sizeof($result), 'info');
+			$data = ImcFrontendHelper::getRawIssues($ts, $prior_to, $minLat, $maxLat, $minLng, $maxLng);
+			$app->enqueueMessage('size: '.sizeof($data), 'info');
 			restore_error_handler();
 
-			echo new JResponseJson($result, 'Issues fetched successfully');
+			echo new JResponseJson($data, 'Issues fetched successfully');
 		}
 		catch(Exception $e)	{
 			header("HTTP/1.0 202 Accepted");
@@ -1000,24 +972,30 @@ class ImcControllerApi extends ImcController
 				throw new Exception('Invalid timestamp');
 			}
 
-			//handle unexpected warnings
-			set_error_handler(array($this, 'exception_error_handler'));
-			$result = self::getModifications($args['ts'], $userid);
-			restore_error_handler();
-
-			//be consistent return as array (of size 1)
-			$result = array($result);
-
 			switch($app->input->getMethod())
 			{
 				case 'GET':
+					//handle unexpected warnings
+					set_error_handler(array($this, 'exception_error_handler'));
+					$result = self::getModifications($args['ts'], $userid);
+					restore_error_handler();
+
+					//be consistent return as array (of size 1)
+					$result = array($result);
+
 					$response = new JResponseJson($result, 'Modifications since timestamp fetched successfully');
-					$length = mb_strlen($response, 'UTF-8');
-					header('Content-Length: '.$length);
 					echo $response;
 
 				break;
 				case 'HEAD':
+					//handle unexpected warnings
+					set_error_handler(array($this, 'exception_error_handler'));
+					$result = self::getModifications($args['ts'], $userid, false);
+					restore_error_handler();
+
+					//be consistent return as array (of size 1)
+					$result = array($result);
+
 					$response = new JResponseJson($result, 'Modifications since timestamp fetched successfully');
 					$length = mb_strlen($response, 'UTF-8');
 					header('Content-Length: '.$length);
@@ -1032,7 +1010,7 @@ class ImcControllerApi extends ImcController
 		}
 	}
 
-	private function getModifications($ts, $userid)
+	private function getModifications($ts, $userid, $sanitize = true)
 	{
 		$offsetDate = JDate::getInstance(date("Y-m-d H:i:s", $ts), JFactory::getConfig()->get('offset') );
         $offset = $offsetDate->format('Y-m-d H:i:s');
@@ -1040,24 +1018,40 @@ class ImcControllerApi extends ImcController
         //1. get issues
         $issuesModel = JModelLegacy::getInstance( 'Issues', 'ImcModel', array('ignore_request' => true) );
         $issuesModel->setState('filter.imcapi.ts', $offset);
+        $issuesModel->setState('filter.imcapi.limit', 1000);
         $issuesModel->setState('filter.imcapi.raw', true); //Do not unset anything in getItems()
 		$data = $issuesModel->getItems();
-		$issues = ImcFrontendHelper::sanitizeIssues($data, $userid, true);
+		$issues = $data;
+		if($sanitize)
+		{
+			$issues = ImcFrontendHelper::sanitizeIssues($data, $userid, true);
+		}
 
-        //2. get categories
+		//2. get categories
         $categories = ImcFrontendHelper::getModifiedCategories($offset);
-        $categories = ImcFrontendHelper::sanitizeCategories($categories);
+		if($sanitize)
+		{
+			$categories = ImcFrontendHelper::sanitizeCategories($categories);
+		}
 
         //3. get steps
         $stepsModel = JModelLegacy::getInstance( 'Steps', 'ImcModel', array('ignore_request' => true) );
         $stepsModel->setState('filter.imcapi.ts', $offset);
         $stepsModel->setState('filter.imcapi.raw', true);
         $data = $stepsModel->getItems();
-        $steps = ImcFrontendHelper::sanitizeSteps($data, true);
+		$steps = $data;
+		if($sanitize)
+		{
+			$steps = ImcFrontendHelper::sanitizeSteps($data, true);
+		}
 
         //4. get votes
         $data = ImcFrontendHelper::getModifiedVotes($offset);
-        $votes = ImcFrontendHelper::sanitizeModifiedVotes($data);
+		$votes = $data;
+		if($sanitize)
+		{
+			$votes = ImcFrontendHelper::sanitizeModifiedVotes($data);
+		}
 
 		//5. full categories structure if modified categories are found
 		$allCategories = array();
@@ -1682,11 +1676,34 @@ class ImcControllerApi extends ImcController
 			set_error_handler(array($this, 'exception_error_handler'));
 			//get items and sanitize them
 			$data = $commentsModel->getItems();
-			$result = ImcFrontendHelper::sanitizeComments($data, $userid);
-			$app->enqueueMessage('size: '.sizeof($result), 'info');
+			$results = ImcFrontendHelper::sanitizeComments($data, $userid);
+
+            $params = $app->getParams('com_imc');
+            $commentsdisplayname = $params->get('commentsdisplayname');
+
+            foreach ($results as &$item)
+            {
+                $created_by_admin = (boolean) $item->isAdmin;
+                if ($commentsdisplayname == 'dpt' && $created_by_admin)
+                {
+                    //show department name
+                    $dpts = array();
+                    //get user groups higher than 9
+                    $usergroups = JAccess::getGroupsByUser($item->created_by, false);
+                    for ($i=0; $i < count($usergroups); $i++) {
+                        if($usergroups[$i] > 9){
+                            $dpts[] = ImcFrontendHelper::getGroupNameById($usergroups[$i]);
+                        }
+                    }
+
+                    $item->fullname = implode(', ', $dpts);
+                }
+            }
+
+			$app->enqueueMessage('size: '.sizeof($results), 'info');
 			restore_error_handler();
 
-			echo new JResponseJson($result, 'Comments fetched successfully');
+			echo new JResponseJson($results, 'Comments fetched successfully');
 		}
 		catch(Exception $e)	{
 			header("HTTP/1.0 202 Accepted");
@@ -1714,4 +1731,49 @@ class ImcControllerApi extends ImcController
 			echo new JResponseJson($e);
 		}
 	}
+
+    public function issuesbycategory()
+    {
+        $result = null;
+        $app = JFactory::getApplication();
+        try {
+            self::validateRequest();
+
+            if($app->input->getMethod() != 'GET')
+            {
+                throw new Exception('You cannot use other method than GET to fetch steps');
+            }
+
+            //get necessary arguments
+            $ts = null;
+            $catid = null;
+            $ts = $app->input->getString('ts');
+            $catid = $app->input->getString('catid');
+
+            if(!is_null($ts))
+            {
+                if(!ImcFrontendHelper::isValidTimeStamp($ts))
+                {
+                    throw new Exception('Invalid timestamp');
+                }
+                //get date from ts
+                $ts = gmdate('Y-m-d H:i:s', $ts);
+            }
+
+            //handle unexpected warnings from model
+            set_error_handler(array($this, 'exception_error_handler'));
+            //get items and sanitize them
+            $result = ImcFrontendHelper::issuesByCategory($ts, $catid);
+            restore_error_handler();
+
+            $app->enqueueMessage('size: '.sizeof($result), 'info');
+            echo new JResponseJson($result, 'Issues fetched successfully');
+        }
+        catch(Exception $e)	{
+            header("HTTP/1.0 202 Accepted");
+            echo new JResponseJson($e);
+        }
+    }
+
+
 }

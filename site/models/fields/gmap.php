@@ -232,7 +232,7 @@ class JFormFieldGmap extends JFormField
 			return implode("\n", $html);
 		}
 
-        $html[] = '<div style="'.implode("", $style).'display:table-cell;clear:both;padding-bottom: 100px;">';
+        $html[] = '<div style="'.implode("", $style).'display:table-cell;clear:both;padding-bottom: 5px;">';
 		if(!$disabled) {
 			$html[] = '		<button id="searchaddress" class="btn btn-mini" type="button"><i class="icon-search icon-white"></i> '. JText::_('COM_IMC_CUSTOM_FIELD_LOCATE_ADDRESS') . '</button>';
 			if($lockaddressbtn) {
@@ -245,7 +245,7 @@ class JFormFieldGmap extends JFormField
 		$html[] = '</div>';
 
 		$html[] = '<!-- Modal -->';
-		$html[] = '<div id="IMC_searchModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">';
+		$html[] = '<div id="IMC_searchModal" class="modal fade'.(isset($this->element['side']) && $this->element['side'] == 'backend' ? ' hide' : '').'" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">';
 		$html[] = '	<div class="modal-dialog modal-sm">';
 		$html[] = '		<div class="modal-content">';
 		$html[] = '			<div class="modal-header">';

@@ -6,6 +6,24 @@
  * @author      Ioannis Tsampoulatidis <tsampoulatidis@gmail.com> - https://github.com/itsam
  */
 
+body {
+    /* Helvetica/Arial-based sans serif stack */
+    font-family:
+            Frutiger, "Frutiger Linotype",
+            Univers,
+            Calibri,
+            "Gill Sans", "Gill Sans MT",
+            "Myriad Pro", Myriad,
+            "DejaVu Sans Condensed",
+            "Liberation Sans",
+            "Nimbus Sans L",
+            Tahoma,
+            Geneva,
+            "Helvetica Neue", Helvetica,
+            Arial,
+            sans-serif;
+}
+
 table.front-end-list{
     width: 100%;
     border-spacing: 1px;
@@ -66,5 +84,224 @@ div.list-footer div.counter{
 }
 
 
+.col-imclist{width:100%;float:left;}
+.col-imclist:nth-child(2n+1){background-color: #f0f0f0;border: 2px solid #f0f0f0;border-bottom: 2px solid rgba(0,0,0,0.08);}
+.col-imclist:nth-child(2n){background-color: white;border: 2px solid white;border-bottom: 2px solid rgba(0,0,0,0.08);}
+.panel-list{margin-bottom:0;border:none;box-shadow:none;padding:18px;}
+.col-imclist .panel{background-color:transparent;}
 
+.total-imclist{background-color:#e4e4e4;height:100%;}
 
+.imc-column{float:left;line-height:120%;box-sizing:border-box;}
+.imc-left-col{width: 4.66666666667%;margin-left:0;text-align:center;}
+.imc-med-col{width:74.0%;margin-left:4%;}
+.imc-right-col {
+    width: 13.3333333333%;
+    text-align: center;
+    margin-left:4%;
+    color:rgba(0, 0, 0, 0.54);
+    height: 100%;
+    vertical-align: middle;
+}
+
+.imc-list-id {
+    font-size:12px;
+    line-height: 140%;
+}
+
+.imc-list-title {
+    font-size: 20px;
+    width: 100%;
+    margin: 0 0 10px;
+    line-height: 20px;
+}
+
+.imc-list-cat-label {
+    text-align: left;
+    text-overflow: ellipsis;
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgb(33,33,33);
+    color: rgba(0,0,0,0.87);
+    padding-bottom: 6px;
+}
+
+.imc-list-edit-icon a i {
+    font-size: 18px;
+}
+
+.imc-list-address{width:100%;margin-bottom:10px;}
+.imc-HorizontalSeparator{background:0;padding:0;background-color:#d1d1d1;border:0;height:1px;margin:0 0 10px;}
+.imc-list-content {
+    width: 100%;
+
+}
+.imc-list-content p {
+    margin: 0 auto;
+    padding-bottom: 6px;
+    line-height: 130%;
+}
+
+.imc-list-img:hover {
+    text-decoration: none;
+
+}
+
+.imc-list-info {
+    width:100%;
+    margin-bottom:10px;
+    line-height: 24px;
+}
+
+.imc-list-info span {
+    margin-right: 12px;
+    font-size: 12px;
+}
+
+.imc-list-info .icon-comment{margin-right:5px;}
+.imc-list-info .icon-thumbs-up{margin-right:5px;}
+@media screen and (max-width:619px){
+    .imc-left-col{width:10%;}
+    .imc-med-col{width:80%;}
+    .imc-right-col{width:100%;margin: 10px 0 20px;}
+    .imc-list-info span{margin-right:0;}
+}
+
+.imc-overview-label-style {
+    text-align: left;
+    text-overflow: ellipsis;
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.imc-right-col-noimage {
+    word-wrap: normal;
+    line-height: 120%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    display: block;
+    width: 100%;
+}
+
+.imc-OverviewListImageStyle {
+    min-height: 90px;
+    min-width: 100%;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    display: block;
+}
+.imc-OverviewListImageStyle img{
+    position: absolute;
+    min-height: 130px;
+    min-width: 100%;
+    left: 50%;
+    top: 50%;
+    /*height: auto;
+    width: auto;*/
+    max-width: none;
+    -webkit-transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+}
+
+.imc-issue-cat-img {
+    max-width: 100%;
+}
+
+.imc-issue-msg {
+    -webkit-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    transform: translateZ(0);
+    cursor: pointer;
+    text-align: center;
+    margin-top: 16px;
+}
+
+.imc-card-msg-icon {
+    z-index: 20;
+    position: relative;
+    width: auto;
+    text-decoration: none;
+    font-size: 24px;
+    color: rgb(226,18,36);
+}
+
+.imc-msg-tooltip {
+    background: #181512;
+    bottom: 100%;
+    color: #fff;
+    margin-bottom: 15px;
+    opacity: 0;
+    padding: 20px;
+    pointer-events: none;
+    -webkit-transform: translateY(10px);
+    -ms-transform: translateY(10px);
+    transform: translateY(10px);
+    transition: all .25s ease-out;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+    border-radius: 3px;
+    text-align: center;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+}
+
+.imc-list-msg-tooltip {
+    display: block;
+    left: 50px;
+    bottom: -25px;
+    position: absolute;
+    max-height: 80px;
+    min-width: 400px;
+}
+
+.imc-list-msg-tooltip :before {
+    bottom: -20px;
+    content: " ";
+    display: block;
+    height: 20px;
+    left: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.imc-list-msg-tooltip :after {
+    border-left: solid transparent 10px;
+    border-right: solid transparent 10px;
+    border-top: solid #181512 10px;
+    bottom: -10px;
+    right: 5px;
+    content: " ";
+    height: 0;
+    margin-left: -13px;
+    position: absolute;
+    width: 0;
+}
+
+.glyphicon-map-marker {
+    position: inherit;
+}
+
+.imc-issue-msg:hover .imc-msg-tooltip {
+    opacity: 1;
+    pointer-events: auto;
+    -webkit-transform: translateY(0px);
+    -ms-transform: translateY(0px);
+    transform: translateY(0px);
+}
+
+/* IE can just show/hide with no transition */
+.lte8 .imc-issue-msg .imc-msg-tooltip {
+    display: none;
+}
+
+.lte8 .imc-issue-msg:hover .imc-msg-tooltip {
+    display: block;
+}

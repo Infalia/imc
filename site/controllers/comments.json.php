@@ -13,6 +13,7 @@ defined('_JEXEC') or die;
 require_once JPATH_COMPONENT.'/controller.php';
 require_once JPATH_COMPONENT_SITE . '/helpers/imc.php';
 require_once JPATH_COMPONENT_ADMINISTRATOR . '/helpers/imc.php';
+JPluginHelper::importPlugin('imc');
 
 /**
  * Issues list controller class.
@@ -23,7 +24,8 @@ class ImcControllerComments extends ImcController
 	 * Proxy for getModel.
 	 * @since	1.6
 	 */
-	public function &getModel($name = 'Comments', $prefix = 'ImcModel')
+
+	public function getModel($name = 'Comments', $prefix = 'ImcModel', $config = array())
 	{
 		$model = parent::getModel($name, $prefix, array('ignore_request' => true));
 		return $model;
@@ -33,19 +35,15 @@ class ImcControllerComments extends ImcController
 	{
 		$app = JFactory::getApplication();
 		$params = $app->getParams('com_imc');
-		$showComments = $params->get('enablecomments');
+		//$showComments = $params->get('enablecomments');
 		$directpublishing = $params->get('directpublishingcomment');
+        $commentsdisplayname = $params->get('commentsdisplayname');
 
 		try {
 
 			// Check for request forgeries.
 			if (!$api && !JSession::checkToken('get')) {
 				throw new Exception('Invalid session token');
-			}
-
-			if(!$showComments)
-			{
-				throw new Exception('Comments are not allowed');
 			}
 
 			$issueid = $app->input->getInt('issueid', null);
@@ -55,8 +53,9 @@ class ImcControllerComments extends ImcController
 			}
 
 			//check if issue exists
+			require_once JPATH_COMPONENT_ADMINISTRATOR . '/models/issue.php';
 			$issueModel = JModelLegacy::getInstance( 'Issue', 'ImcModel', array('ignore_request' => true) );
-			$issue = $issueModel->getData($issueid);
+			$issue = $issueModel->getItem($issueid);
 			if(!is_object($issue))
 			{
 				throw new Exception(JText::_('COM_IMC_API_ISSUE_NOT_EXIST'));
@@ -75,6 +74,12 @@ class ImcControllerComments extends ImcController
 			if($userid == 0)
 			{
 				throw new Exception('guests cannot post comments');
+			}
+
+            $showComments = ImcFrontendHelper::showComments(JFactory::getUser($userid), $issue);
+			if(!$showComments)
+			{
+				throw new Exception('Comments are not allowed (by setting)');
 			}
 
 			$parentid = $app->input->getInt('parentid', 0);
@@ -102,10 +107,10 @@ class ImcControllerComments extends ImcController
 			}
 			$comment->created = ImcFrontendHelper::convert2UTC(date('Y-m-d H:i:s'));
 			$comment->updated = $comment->created;
-			$comment->created_by = $userid;
-			$comment->description = $description;
-			$comment->fullname = JFactory::getUser($userid)->name;
-			$comment->moderation = (!$directpublishing && !$created_by_admin) ? 1 : 0;
+            $comment->created_by = $userid;
+            $comment->description = $description;
+            $comment->fullname = JFactory::getUser($userid)->name;
+            $comment->moderation = (!$directpublishing && !$created_by_admin) ? 1 : 0;
 			$comment->language = "*";
 			$comment->isAdmin = (int)$created_by_admin;
 
@@ -128,6 +133,9 @@ class ImcControllerComments extends ImcController
 				$comment->profile_picture_url = JURI::base().'components/com_imc/assets/images/admin-user-icon.png';
 			}
 
+			$dispatcher = JEventDispatcher::getInstance();
+			$dispatcher->trigger( 'onAfterNewCommentAdded', array( $issueModel, array('id'=>$issueid, 'title'=>$issue->title), $issueid) );
+
 			if($api)
 			{
 				$result = ImcFrontendHelper::sanitizeComment($comment, $userid);
@@ -149,6 +157,10 @@ class ImcControllerComments extends ImcController
 
 	public function comments()
 	{
+        $app = JFactory::getApplication();
+        $params = $app->getParams('com_imc');
+        $commentsdisplayname = $params->get('commentsdisplayname');
+
 		try {
 			// Check for request forgeries.
 			if(!JSession::checkToken('get')){
@@ -179,7 +191,28 @@ class ImcControllerComments extends ImcController
 				$comment = new StdClass();
 				$comment->id = $item->id;
 				$comment->created = ImcFrontendHelper::convertFromUTC($item->created);
-				$comment->fullname = $item->fullname;
+				//$comment->fullname = $item->fullname;
+                $created_by_admin = (boolean) $item->isAdmin;
+                if ($commentsdisplayname == 'admin' || !$created_by_admin)
+                {
+                    //show administrator / user name
+                    $comment->fullname = $item->fullname;
+                }
+                elseif ($commentsdisplayname == 'dpt' && $created_by_admin)
+                {
+                    //show department name
+                    $dpts = array();
+                    //get user groups higher than 9
+                    $usergroups = JAccess::getGroupsByUser($item->created_by, false);
+                    for ($i=0; $i < count($usergroups); $i++) {
+                        if($usergroups[$i] > 9){
+                            $dpts[] = ImcFrontendHelper::getGroupNameById($usergroups[$i]);
+                        }
+                    }
+
+                    $comment->fullname = implode(', ', $dpts);
+                }
+
 				$comment->description = $item->description;
 				$comment->profile_picture_url = JURI::base().'components/com_imc/assets/images/user-icon.png';
 				if($item->moderation)

@@ -48,7 +48,10 @@ class ImcViewIssues extends JViewLegacy
 			throw new Exception(implode("\n", $errors));
 		}
 
-		$this->setLayout(JFactory::getApplication()->input->get('layout', 'default'));
+		$imcfiltersParams = new JRegistry(  JModuleHelper::getModule('mod_imcfilters')->params );
+		$layout = $app->getUserStateFromRequest('imc.layout', 'layout', $imcfiltersParams['imc_display']);
+
+		$this->setLayout($layout);
 		$this->_prepareDocument();
 		parent::display($tpl);
 	}
@@ -110,8 +113,5 @@ class ImcViewIssues extends JViewLegacy
 			$this->document->setMetadata('robots', $this->params->get('robots'));
 		}
 
-		$this->document->addStyleSheet(JURI::root(true) . '/components/com_imc/assets/css/card.css');
-		//$this->document->addScript(JURI::root(true) . '/components/com_imc/assets/js/masonry.pkgd.min.js');
-		//$this->document->addScript(JURI::root(true) . '/components/com_imc/assets/js/imagesloaded.pkgd.min.js');
 	}
 }

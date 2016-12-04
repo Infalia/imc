@@ -225,7 +225,7 @@ if (!empty($this->extra_sidebar)) {
 				</td>
 				<td>
 
-					<?php echo $item->created_by; ?>
+					<?php echo $item->created_by_name; ?>
 				</td>
 				<td>
 
@@ -258,6 +258,11 @@ if (!empty($this->extra_sidebar)) {
 	</div>
 
 	<?php // Load the batch processing form. ?>
+	<?php
+		$canCreate = $user->authorise('core.create', 'com_imc');
+		$canEdit = $user->authorise('core.edit', 'com_imc');
+		$canChange = $user->authorise('core.edit.state', 'com_imc');
+	?>
 	<?php if ($canCreate
 		&& $canEdit
 		&& $canChange) : ?>

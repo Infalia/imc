@@ -104,7 +104,8 @@ class ImcHelper {
             'imc.manage.comments',
             'imc.manage.steps',
             'imc.manage.logs',
-            'imc.showall.issues'
+            'imc.showall.issues',
+            'imc.manage.moderation'
         );
 
         foreach ($actions as $action) {
@@ -170,6 +171,19 @@ class ImcHelper {
             }
         }
         return false;
+    }
+
+    public static function renewCategories()
+    {
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $fields = array(
+            $db->quoteName('modified_time') . ' = NOW()'
+        );
+        $query->update($db->quoteName('#__categories'))->set($fields)->where('extension = ' . $db->quote('com_imc'));
+        $db->setQuery($query);
+        $result = $db->execute();
+        return $result;
     }
 
 }

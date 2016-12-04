@@ -17,6 +17,12 @@ $state = $issuesModel->getState();
 $listOrder = $state->get('list.ordering');
 $listDirn  = $state->get('list.direction');
 
+if($listOrder == 'a.votes')
+{
+	$listDirn = 'desc';
+}
+
+
 $app = JFactory::getApplication();
 $search = $app->getUserStateFromRequest('com_imc.issues.filter.search', 'filter_search');
 $owned = $app->getUserStateFromRequest('com_imc.issues.filter.owned', 'filter_owned');
@@ -52,26 +58,35 @@ $id = $jinput->get('id', null);
 					<a href="http://www.improve-my-city.com" target="_blank"><img src="<?php echo $powered_by; ?>" title="http://www.improve-my-city.com" alt="Powered by Improve My City" /></a>
 				<?php endif; ?>
 
-				<a id="search_btn" href="#IMC_advancedSearchModal" role="button" class="btn btn-primary" data-toggle="modal"><i class="icon-search"></i> <?php echo JText::_('MOD_IMCFILTERS_SEARCH'); ?></a>
+				<a id="search_btn" href="#IMC_advancedSearchModal" role="button" class="btn btn-primary" data-toggle="modal"><i class="icon-search"></i> <span class="hidden-xs hidden-sm hidden-md"><?php echo JText::_('MOD_IMCFILTERS_SEARCH'); ?></span></a>
 				<div class="btn-group">
 				  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-				    <?php echo JText::_('MOD_IMCFILTERS_ORDERING'); ?> <span class="caret"></span>
+					  <i class="icon-signal"></i> <span class="hidden-xs hidden-sm hidden-md"><?php echo JText::_('MOD_IMCFILTERS_ORDERING'); ?></span> <span class="caret"></span>
 				  </button>
 				  <ul class="dropdown-menu" role="menu">
-				    <li><?php echo JHtml::_('grid.sort',  'COM_IMC_ISSUES_TITLE', 'a.title', $listDirn, $listOrder); ?></li>
-					<li><?php echo JHtml::_('grid.sort',  'COM_IMC_ISSUES_STEPID', 'a.stepid', $listDirn, $listOrder); ?></li>
-					<li><?php echo JHtml::_('grid.sort',  'JDATE', 'a.updated', $listDirn, $listOrder); ?></li>
+					  <li><?php echo JHtml::_('grid.sort',  'JDATE', 'a.updated', $listDirn, $listOrder); ?></li>
+					  <li><?php echo JHtml::_('grid.sort',  'COM_IMC_ISSUES_VOTES', 'a.votes', $listDirn, $listOrder); ?></li>
+					  <li><?php echo JHtml::_('grid.sort',  'COM_IMC_ISSUES_STEPID', 'a.stepid', $listDirn, $listOrder); ?></li>
 				  </ul>
 				</div>
 
 				<div class="btn-group">
 				  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-				    <?php echo JText::_('MOD_IMCFILTERS_DISPLAY'); ?> <span class="caret"></span>
+					  <i class="icon-eye-open"></i> <span class="hidden-xs hidden-sm hidden-md"><?php echo JText::_('MOD_IMCFILTERS_DISPLAY'); ?></span> <span class="caret"></span>
 				  </button>
 				  <ul class="dropdown-menu" role="menu">
 				  	<?php echo ModImcfiltersHelper::createLimitBox($state->get('list.limit')); ?>
 				  </ul>
-				</div>		
+				</div>
+
+				<?php
+					$layout = $app->getUserStateFromRequest('imc.layout', 'layout', $params->get('imc_display') );
+				?>
+				<div class="btn-group">
+					<a class="btn <?php echo ($layout == 'list' ? 'btn-default': ''); ?>" role="button" title="<?php echo JText::_('MOD_IMCFILTERS_LIST_LAYOUT'); ?>" href="<?php echo JRoute::_('index.php?option=com_imc&layout=list', false, 2); ?>" ><i class="icon-align-justify"></i></a>
+					<a class="btn <?php echo ($layout == 'default' ? 'btn-default': ''); ?>" role="button" title="<?php echo JText::_('MOD_IMCFILTERS_CARD_LAYOUT'); ?>" href="<?php echo JRoute::_('index.php?option=com_imc&layout=default', false, 2); ?>" ><i class="icon-th"></i></a>
+				</div>
+
 				<?php if($params->get('show_help') == 1) : ?>
 					<a id="help_btn" href="<?php echo $params->get('help_link'); ?>" role="button" class="btn btn-default"><i class="icon-help"></i> <?php echo JText::_('MOD_IMCFILTERS_HELP'); ?></a>
 				<?php endif; ?>
@@ -86,21 +101,6 @@ $id = $jinput->get('id', null);
 					<a href="<?php echo $params->get('google_play_link'); ?>" target="_blank"><img src="<?php echo $googlePlay; ?>" title="<?php echo JText::_('MOD_IMCFILTERS_DOWNLOAD_GOOGLEPLAY'); ?>" alt="Google Play badge" /></a>
 				<?php endif; ?>
 
-
-				<?php /*
-				TODO: Set layout state
-				<div class="btn-group">
-					<span class="imc_btn_left">
-						<a title="list layout" href="<?php echo JRoute::_('index.php?option=com_imc&layout=default', false, 2); ?>" class="btn btn-default"><i class="icon-align-justify"></i></a>		
-					</span>	
-					<span class="imc_btn_left">
-						<a title="tabular layout" href="<?php echo JRoute::_('index.php?option=com_imc&layout=tabular', false, 2); ?>" class="btn btn-default"><i class="icon-list"></i></a>		
-					</span>	
-					<span class="imc_btn_left">
-						<a title="media layout" href="<?php echo JRoute::_('index.php?option=com_imc&layout=media', false, 2); ?>" class="btn btn-default"><i class="icon-th"></i></a>		
-					</span>	
-				</div>					
-				*/ ?>
 			</div>
 		<?php endif; ?>
 
@@ -108,7 +108,7 @@ $id = $jinput->get('id', null);
 		
 		<?php if ($canCreate && $option == 'com_imc' && $view == 'issues'): ?>
 			<div class="imc_btn_right">
-		    	<a href="<?php echo JRoute::_('index.php?option=com_imc&view=issueform', false, 2); ?>" class="btn btn-success btn-large btn-lg"><i class="icon-plus"></i> <?php echo JText::_('MOD_IMCFILTERS_ADD_ITEM'); ?></a>
+		    	<a href="<?php echo JRoute::_('index.php?option=com_imc&view=issueform', false, 2); ?>" class="btn btn-success"><i class="icon-plus"></i> <?php echo JText::_('MOD_IMCFILTERS_ADD_ITEM'); ?><br /><span style="font-size: 10px;">(<?php echo JFactory::getUser()->name;?>)</span></a>
 		    </div>
 		<?php endif; ?>
 		<?php if ($canCreate && $option == 'com_imc' && $view == 'issue'): ?>
